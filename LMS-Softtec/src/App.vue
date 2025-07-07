@@ -1,21 +1,19 @@
-<script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="./assets/ScooTec3.png" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <img alt="Vue logo" class="logo" src="./assets/logo.png" width="125" height="125" />
+    <div>
+      <h1>Welcome to LMS-Softtec!</h1>
     </div>
   </header>
 
   <main>
-    <TheWelcome />
+    
   </main>
 </template>
+
+<script setup lang="ts">
+
+</script>
 
 <style scoped>
 header {
