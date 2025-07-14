@@ -1,4 +1,4 @@
-import { finishLoading, startRouteCalculation, startScooterLoading, updateLoadingStep } from "@/stores/loading";
+import { finishLoading, startScooterLoading, updateLoadingStep } from "@/stores/loading";
 import type { RouteInfo, Scooter, ScooterRide } from "@/types/scooter";
 import { calculateCost, calculateDistance, generateMockActiveRides, generateMockScooters } from "@/utils/mockData";
 import { routingService } from "@/utils/routing";
@@ -115,17 +115,9 @@ export async function setTargetPosition(position: [number, number]) {
     targetPosition.value = position;
     isCalculatingRoute.value = true;
 
-    // Start route calculation loading
-    startRouteCalculation();
-    updateLoadingStep("request", "completed");
-    updateLoadingStep("calculate", "loading");
-
     try {
         console.log("Calculating real route...");
         const routeData = await routingService.calculateRoute(selectedScooter.value.position, position);
-
-        updateLoadingStep("calculate", "completed");
-        updateLoadingStep("optimize", "loading");
 
         const { cost, duration } = calculateCost(routeData.distance, selectedScooter.value.pricePerMinute);
 
@@ -136,18 +128,9 @@ export async function setTargetPosition(position: [number, number]) {
             waypoints: routeData.waypoints,
         };
 
-        updateLoadingStep("optimize", "completed");
-        updateLoadingStep("complete", "loading");
-
         console.log("Real route calculated:", routeInfo.value);
-
-        updateLoadingStep("complete", "completed");
-        finishLoading();
     } catch (error) {
         console.warn("Real routing failed, using direct route:", error);
-
-        updateLoadingStep("calculate", "error");
-        updateLoadingStep("optimize", "loading", "Fallback-Route wird berechnet...");
 
         // Fallback to direct route
         const distance = calculateDistance(selectedScooter.value.position, position);
@@ -159,10 +142,6 @@ export async function setTargetPosition(position: [number, number]) {
             cost,
             waypoints: [selectedScooter.value.position, position],
         };
-
-        updateLoadingStep("optimize", "completed");
-        updateLoadingStep("complete", "completed");
-        finishLoading();
 
         console.log("Fallback route calculated:", routeInfo.value);
     }

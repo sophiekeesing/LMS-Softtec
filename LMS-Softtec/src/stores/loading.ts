@@ -105,20 +105,9 @@ export function startScooterLoading(scooterCount: number) {
         { id: "scooters", label: `${scooterCount} E-Scooter generieren`, status: "pending" },
         { id: "validation", label: "Smart Positioning", status: "pending" },
         { id: "rides", label: "Aktive Fahrten erstellen", status: "pending" },
-        { id: "routes", label: "Direkte Routen berechnen", status: "pending" },
+        { id: "routes", label: "Echte Routen berechnen", status: "pending" },
         { id: "finalize", label: "Abschließen", status: "pending" },
     ];
 
     startLoading("E-Scooter Daten werden geladen", steps);
-}
-
-export function startRouteCalculation() {
-    const steps: LoadingStep[] = [
-        { id: "request", label: "Route anfordern", status: "pending" },
-        { id: "calculate", label: "Route berechnen", status: "pending" },
-        { id: "optimize", label: "Route optimieren", status: "pending" },
-        { id: "complete", label: "Route fertigstellen", status: "pending" },
-    ];
-
-    startLoading("Route wird berechnet", steps);
 }

@@ -171,15 +171,11 @@ function initMap() {
 
         console.log("Map element found:", element);
 
-        // Initialize map
+        // Initialize map with free movement
         map = L.map(element, {
             center: HAMBURG_CENTER,
             zoom: 14,
-            maxBounds: [
-                [53.535, 9.95], // Southwest coordinates (north of Elbe)
-                [53.58, 10.03], // Northeast coordinates
-            ],
-            maxBoundsViscosity: 1.0,
+            // Removed maxBounds to allow free navigation
         });
         mapRef.value = map;
         console.log("Map initialized at:", HAMBURG_CENTER);

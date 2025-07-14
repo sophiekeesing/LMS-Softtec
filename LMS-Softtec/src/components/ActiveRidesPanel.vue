@@ -29,7 +29,7 @@
 
                 <div class="flex justify-between text-xs text-gray-600 mb-1">
                     <span>Dauer: {{ getRideDuration(ride) }}</span>
-                    <span>Akku: {{ getCurrentBattery(ride) }}%</span>
+                    <span>Akku: {{ Math.round(getBatteryUsagePercentage(ride)) }}%</span>
                 </div>
 
                 <div class="text-xs text-gray-500">

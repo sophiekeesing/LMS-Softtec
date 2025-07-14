@@ -1,5 +1,6 @@
 import { updateLoadingStep } from "@/stores/loading";
 import type { Scooter, ScooterRide } from "@/types/scooter";
+import { routingService } from "./routing";
 
 // Hamburg city center coordinates (Rathaus/Binnenalster)
 export const HAMBURG_CENTER: [number, number] = [53.5511, 9.9937];
@@ -108,22 +109,22 @@ export async function generateMockActiveRides(scooters: Scooter[]): Promise<Scoo
 
     updateLoadingStep("rides", "loading", `0 von ${scootersInUse.length} Fahrten erstellt`);
 
-    // Process rides sequentially to avoid too many concurrent requests
+    // Process rides with real Valhalla routing for realistic routes
     let processedRides = 0;
     for (const scooter of scootersInUse) {
         try {
             updateLoadingStep("rides", "loading", `Fahrt ${processedRides + 1} von ${scootersInUse.length} wird erstellt...`);
             updateLoadingStep("routes", "loading", `Route für ${scooter.model} wird berechnet...`);
 
-            // Generate target position using smart positioning (no API calls)
+            // Generate target position using smart positioning (no API validation needed)
             const targetPosition = generateRandomPosition();
 
             // Store original position as start position
             const startPosition: [number, number] = [...scooter.position];
 
-            // Use direct route calculation instead of Valhalla API
-            const distance = calculateDistance(startPosition, targetPosition);
-            const { duration } = calculateCost(distance, scooter.pricePerMinute);
+            // Calculate real route using Valhalla for active rides
+            const routeData = await routingService.calculateRoute(startPosition, targetPosition);
+            const { duration } = calculateCost(routeData.distance, scooter.pricePerMinute);
 
             // Random progress between 10% and 80% (rides in progress)
             const progress = 0.1 + Math.random() * 0.7;
@@ -134,10 +135,8 @@ export async function generateMockActiveRides(scooters: Scooter[]): Promise<Scoo
             const startTime = new Date(Date.now() - elapsedMs);
             const estimatedEndTime = new Date(startTime.getTime() + totalDurationMs);
 
-            // Simple linear interpolation for current position (no complex routing)
-            const [startLat, startLng] = startPosition;
-            const [targetLat, targetLng] = targetPosition;
-            const currentPosition: [number, number] = [startLat + (targetLat - startLat) * progress, startLng + (targetLng - startLng) * progress];
+            // Use routing service to interpolate position along real route
+            const currentPosition = routingService.interpolatePosition(routeData.waypoints, progress);
 
             // Validate the interpolated position
             if (isNaN(currentPosition[0]) || isNaN(currentPosition[1])) {
@@ -157,13 +156,18 @@ export async function generateMockActiveRides(scooters: Scooter[]): Promise<Scoo
                 startTime,
                 estimatedEndTime,
                 progress,
-                route: [startPosition, targetPosition], // Simple direct route
+                route: routeData.waypoints, // Real route with waypoints
                 isActive: true,
                 initialBatteryLevel: scooter.batteryLevel + Math.floor(Math.random() * 20), // Simulate initial battery was higher
             };
 
             activeRides.push(ride);
             processedRides++;
+
+            // Small delay to avoid overwhelming Valhalla API for route calculations
+            if (processedRides < scootersInUse.length) {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+            }
         } catch (error) {
             console.warn(`Failed to generate route for scooter ${scooter.id}, using direct route:`, error);
 
