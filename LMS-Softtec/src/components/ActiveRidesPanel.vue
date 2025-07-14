@@ -1,13 +1,15 @@
 <template>
     <div v-if="activeRides.length > 0" class="bg-white rounded-lg shadow-lg p-4 max-w-sm">
         <h2 class="text-lg font-bold text-gray-800 mb-3">🚴 Aktive Fahrten ({{ activeRides.length }})</h2>
+        <p class="text-xs text-gray-500 mb-3">💡 Klicke auf eine Fahrt, um den Scooter auszuwählen</p>
 
         <div class="space-y-3 max-h-64 overflow-y-auto active-rides-scroll">
             <div
                 v-for="ride in activeRides"
                 :key="ride.id"
+                @click="selectRide(ride)"
                 :class="[
-                    'border rounded p-3 transition-all duration-300',
+                    'border rounded p-3 transition-all duration-300 cursor-pointer hover:bg-gray-50 hover:border-gray-300',
                     isSelectedScooterRide(ride) ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200' : 'border-gray-200',
                 ]"
             >
@@ -41,7 +43,15 @@
 </template>
 
 <script setup lang="ts">
-import { activeRides, calculateBatteryUsage, calculateCurrentRideCost, calculateRideDuration, scooters, selectedScooter } from "@/stores/scooters";
+import {
+    activeRides,
+    calculateBatteryUsage,
+    calculateCurrentRideCost,
+    calculateRideDuration,
+    scooters,
+    selectedScooter,
+    selectScooterByRide,
+} from "@/stores/scooters";
 import type { ScooterRide } from "@/types/scooter";
 import { onMounted, onUnmounted, ref } from "vue";
 
@@ -69,6 +79,10 @@ function getScooterModel(scooterId: string): string {
 
 function isSelectedScooterRide(ride: ScooterRide): boolean {
     return selectedScooter.value?.id === ride.scooterId;
+}
+
+function selectRide(ride: ScooterRide): void {
+    selectScooterByRide(ride);
 }
 
 function formatTime(date: Date): string {

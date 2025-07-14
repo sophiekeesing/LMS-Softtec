@@ -21,6 +21,7 @@ export interface ScooterRide {
     route: [number, number][];
     isActive: boolean;
     initialBatteryLevel?: number; // battery level when ride started
+    isAutomatic?: boolean; // whether this is an automatic ride
 }
 
 export interface RouteInfo {

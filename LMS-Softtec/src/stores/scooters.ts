@@ -1,6 +1,6 @@
 import { finishLoading, startScooterLoading, updateLoadingStep } from "@/stores/loading";
 import type { RouteInfo, Scooter, ScooterRide } from "@/types/scooter";
-import { calculateCost, calculateDistance, generateMockActiveRides, generateMockScooters } from "@/utils/mockData";
+import { calculateCost, calculateDistance, generateMockActiveRides, generateMockScooters, generateRandomPosition } from "@/utils/mockData";
 import { routingService } from "@/utils/routing";
 import { ref } from "vue";
 
@@ -12,9 +12,96 @@ export const routeInfo = ref<RouteInfo | null>(null);
 export const activeRides = ref<ScooterRide[]>([]);
 export const isCalculatingRoute = ref(false);
 
+// Automatic ride system
+let automaticRideInterval: number | null = null;
+const MIN_AVAILABLE_SCOOTERS = 8; // Mindestanzahl freier Scooter
+const MAX_AUTO_RIDES_PERCENTAGE = 0.3; // Maximal 30% der Scooter können automatisch fahren
+const AUTO_RIDE_CHECK_INTERVAL = 15000; // Alle 15 Sekunden prüfen
+const AUTO_RIDE_PROBABILITY = 0.15; // 15% Chance pro Check, dass ein Scooter startet
+
 // Get active ride for a specific scooter
 export function getActiveRideForScooter(scooterId: string): ScooterRide | null {
     return activeRides.value.find((ride) => ride.scooterId === scooterId && ride.isActive) || null;
+}
+
+// Automatic ride system functions
+function getAvailableScootersForAutoRide(): Scooter[] {
+    return scooters.value.filter(
+        (scooter) => scooter.isAvailable && !scooter.isInUse && scooter.batteryLevel > 30, // Nur Scooter mit genug Akku
+    );
+}
+
+function canStartAutomaticRide(): boolean {
+    const availableScooters = getAvailableScootersForAutoRide();
+    const currentAutoRides = activeRides.value.filter((ride) => ride.isAutomatic).length;
+    const maxAutoRides = Math.floor(scooters.value.length * MAX_AUTO_RIDES_PERCENTAGE);
+
+    return availableScooters.length > MIN_AVAILABLE_SCOOTERS && currentAutoRides < maxAutoRides && Math.random() < AUTO_RIDE_PROBABILITY;
+}
+
+async function startAutomaticRide(): Promise<void> {
+    if (!canStartAutomaticRide()) return;
+
+    const availableScooters = getAvailableScootersForAutoRide();
+    if (availableScooters.length === 0) return;
+
+    // Zufälligen Scooter auswählen
+    const randomScooter = availableScooters[Math.floor(Math.random() * availableScooters.length)];
+
+    try {
+        // Zufällige Zielposition generieren
+        const targetPos = generateRandomPosition();
+
+        // Route berechnen
+        const routeData = await routingService.calculateRoute(randomScooter.position, targetPos);
+        const { duration } = calculateCost(routeData.distance, randomScooter.pricePerMinute);
+
+        // Automatische Fahrt erstellen
+        const rideId = `auto-ride-${Date.now()}`;
+        const ride: ScooterRide = {
+            id: rideId,
+            scooterId: randomScooter.id,
+            startPosition: [...randomScooter.position] as [number, number],
+            currentPosition: [...randomScooter.position] as [number, number],
+            targetPosition: targetPos,
+            startTime: new Date(),
+            estimatedEndTime: new Date(Date.now() + duration * 60 * 1000),
+            progress: 0,
+            route: routeData.waypoints,
+            isActive: true,
+            isAutomatic: true, // Markierung für automatische Fahrt
+            initialBatteryLevel: randomScooter.batteryLevel,
+        };
+
+        // Scooter Status aktualisieren
+        randomScooter.isInUse = true;
+        randomScooter.isAvailable = false;
+
+        activeRides.value.push(ride);
+        simulateRide(ride);
+
+        console.log(`🚗 Automatische Fahrt gestartet: Scooter ${randomScooter.model} (${randomScooter.id}) fährt ${Math.round(routeData.distance)}m`);
+    } catch (error) {
+        console.warn("Fehler beim Starten der automatischen Fahrt:", error);
+    }
+}
+
+export function startAutomaticRideSystem(): void {
+    if (automaticRideInterval) return; // System bereits gestartet
+
+    automaticRideInterval = setInterval(() => {
+        startAutomaticRide();
+    }, AUTO_RIDE_CHECK_INTERVAL) as any;
+
+    console.log("🚀 Automatisches Scooter-System gestartet");
+}
+
+export function stopAutomaticRideSystem(): void {
+    if (automaticRideInterval) {
+        clearInterval(automaticRideInterval);
+        automaticRideInterval = null;
+        console.log("⏹️ Automatisches Scooter-System gestoppt");
+    }
 }
 
 // Calculate current ride cost based on elapsed time
@@ -76,6 +163,12 @@ export async function initializeScooters() {
         });
 
         updateLoadingStep("finalize", "completed");
+
+        // Automatisches Scooter-System starten
+        setTimeout(() => {
+            startAutomaticRideSystem();
+        }, 5000); // Nach 5 Sekunden starten
+
         finishLoading();
     } catch (error) {
         console.error("Failed to initialize scooters:", error);
@@ -101,6 +194,18 @@ export function selectScooter(scooter: Scooter) {
 
     console.log("Scooter selected successfully:", scooter.id);
     return true;
+}
+
+// Select a scooter by ride - find scooter associated with the ride
+export function selectScooterByRide(ride: ScooterRide) {
+    const scooter = scooters.value.find((s) => s.id === ride.scooterId);
+    if (scooter) {
+        selectScooter(scooter);
+        console.log("Scooter selected by ride:", ride.id, "-> scooter:", scooter.id);
+        return true;
+    }
+    console.warn("Scooter not found for ride:", ride.id);
+    return false;
 }
 
 // Set target position and calculate route

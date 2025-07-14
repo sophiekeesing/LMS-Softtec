@@ -7,7 +7,7 @@ export const HAMBURG_CENTER: [number, number] = [53.5511, 9.9937];
 
 // Generate random coordinates within Hamburg city bounds (north of Elbe)
 // Uses smart placement to avoid water areas
-function generateRandomPosition(): [number, number] {
+export function generateRandomPosition(): [number, number] {
     // Define safe zones within Hamburg (north of Elbe) to avoid major water bodies
     const safeZones = [
         // Altona/St. Pauli area
