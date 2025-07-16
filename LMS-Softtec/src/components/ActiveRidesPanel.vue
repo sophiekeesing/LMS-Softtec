@@ -1,5 +1,5 @@
 <template>
-    <div v-if="activeRides.length > 0" class="bg-white rounded-lg shadow-lg p-4 max-w-sm">
+    <div v-if="activeRides.length > 0" class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs sm:max-w-sm text-xs sm:text-sm md:text-base">
         <h2 class="text-lg font-bold text-gray-800 mb-3">🚴 Aktive Fahrten ({{ activeRides.length }})</h2>
         <p class="text-xs text-gray-500 mb-3">💡 Klicke auf eine Fahrt, um den Scooter auszuwählen</p>
 
