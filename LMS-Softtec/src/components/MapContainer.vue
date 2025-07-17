@@ -1,45 +1,14 @@
 <template>
   <div
     :class="[
-      props.full
+      isFullScreen
         ? 'fixed inset-0 w-screen h-screen rounded-none shadow-none z-[10000] cursor-default'
         : 'fixed left-1/2 top-1/2 w-[50vw] h-[50vh] rounded-2xl shadow-2xl z-10 cursor-pointer -translate-x-1/2 -translate-y-1/2',
       'bg-white overflow-hidden transition-all duration-300 ease-[cubic-bezier(.4,2,.6,1)]'
     ]"
     @click.self="toggleFullscreen"
   >
-    <!-- Original UI Overlays -->
-    <div class="absolute top-4 right-4 z-[100]">
-      <div class="bg-white rounded-lg shadow-lg p-4 max-w-sm">
-        <h1 class="text-xl font-bold text-gray-800 mb-2">🛴 ScooTeq</h1>
-        <p class="text-sm text-gray-600">
-          Klicken Sie auf einen verfügbaren Scooter, dann auf Ihr Ziel
-        </p>
-        <p class="text-xs text-gray-500 mt-1">
-          🔄 Aktive Fahrten werden live angezeigt
-        </p>
-
-        <!-- Scooter status legend -->
-        <div class="mt-3 pt-2 border-t border-gray-200">
-          <p class="text-xs font-medium text-gray-600 mb-1">Scooter Status:</p>
-          <div class="flex flex-col gap-1">
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full bg-green-500"></div>
-              <span class="text-xs text-gray-600">Verfügbar</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span class="text-xs text-gray-600">In Benutzung</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full bg-red-500"></div>
-              <span class="text-xs text-gray-600">Deaktiviert</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <OverviewPanel :is-full-screen="isFullScreen"/>
     <!-- External Component Panels -->
     <div
       class="absolute left-1 right-1 top-20 sm:top-24 sm:left-4 sm:right-auto z-[100] space-y-2 sm:space-y-4 transition-transform duration-300 ease-[cubic-bezier(.4,2,.6,1)]"
@@ -56,7 +25,7 @@
 
     <!-- Non-clickable overlay (only when not fullscreen) -->
     <div
-      v-if="!props.full"
+      v-if="!isFullScreen"
       class="absolute inset-0 w-full h-full z-[1001] bg-transparent"
       style="pointer-events: all"
     ></div>
@@ -70,18 +39,18 @@
 
     <!-- Expand Button (only when not fullscreen) -->
     <button
-      v-if="!props.full"
-      class="absolute bottom-4 right-4 z-[2000] bg-[#ACCACE] border-none rounded-full w-9 h-9 text-xl cursor-pointer shadow-md transition-colors duration-200 hover:bg-gray-100"
-      @click.stop="toggleFullscreen"
+      v-if="!isFullScreen"
+      class="absolute bottom-5 right-5  z-[3000] font-bold bg-white rounded-xl w-32 h-9 cursor-pointer shadow-md transition-colors duration-200 hover:bg-gray-100"
+      @click="toggleFullscreen"
       title="Vollbild"
     >
-      ⛶
+      Karte öffnen
     </button>
 
     <!-- Collapse Button (only when fullscreen) -->
     <button
-      v-if="props.full"
-      class="absolute top-4 right-4 z-[2000] bg-[#ACCACE] border-none rounded-full w-9 h-9 text-xl cursor-pointer shadow-md transition-colors duration-200 hover:bg-gray-100"
+      v-if="isFullScreen"
+      class="absolute top-4 right-4 z-[2000] font-bold bg-white border-none rounded-full w-9 h-9 text-xl cursor-pointer shadow-md transition-colors duration-200 hover:bg-gray-100"
       @click.stop="toggleFullscreen"
       title="Zurück"
     >
@@ -108,6 +77,9 @@ import {
 import { HAMBURG_CENTER } from "@/utils/mockData";
 import L from "leaflet";
 import { computed, defineEmits, defineProps, ref, watch, onMounted, onUnmounted } from "vue";
+import OverviewPanel from "@/components/OverviewPanel.vue";
+
+const isFullScreen = ref<boolean>(false);
 
 // Fix Leaflet's default icon path issues with Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -122,13 +94,6 @@ L.Icon.Default.mergeOptions({
 
 const mapElement = ref<HTMLElement | null>(null);
 const mapRef = ref<L.Map | null>(null);
-
-const props = defineProps({
-  full: Boolean
-});
-const emit = defineEmits<{
-  (event: 'update:full', value: boolean): void
-}>();
 
 let map: L.Map | null = null;
 let scooterMarkers: L.Marker[] = [];
@@ -391,10 +356,10 @@ function updateActiveRides() {
     }
   });
 }
-const panelScale = computed(() => (props.full ? 1.25 : 0.85));
+const panelScale = computed(() => (isFullScreen.value ? 1.25 : 0.85));
 
 function toggleFullscreen() {
-  emit('update:full', !props.full);
+  isFullScreen.value = !isFullScreen.value
   setTimeout(() => {
     if (mapRef.value) mapRef.value.invalidateSize();
   }, 200);
