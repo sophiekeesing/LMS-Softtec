@@ -1,11 +1,16 @@
 <template>
-    <div v-if="routeInfo && selectedScooter && targetPosition" class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs sm:max-w-sm text-xs sm:text-sm md:text-base">
+    <div
+        v-if="routeInfo && selectedScooter && targetPosition"
+        class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs sm:max-w-sm text-xs sm:text-sm md:text-base"
+    >
         <h2 class="text-lg font-bold text-gray-800 mb-3">Route berechnet</h2>
 
         <div class="space-y-2 mb-4">
             <div class="flex justify-between">
                 <span class="text-gray-600">Entfernung:</span>
-                <span class="font-medium">{{ (routeInfo.distance / 1000).toFixed(2) }} km</span>
+                <span class="font-medium"
+                    >{{ (routeInfo.distance / 1000).toFixed(2) }} km</span
+                >
             </div>
 
             <div class="flex justify-between">
@@ -15,7 +20,9 @@
 
             <div class="flex justify-between">
                 <span class="text-gray-600">Geschätzte Kosten:</span>
-                <span class="font-medium text-lg text-blue-600">{{ routeInfo.cost.toFixed(2) }}€</span>
+                <span class="font-medium text-lg text-blue-600"
+                    >{{ routeInfo.cost.toFixed(2) }}€</span
+                >
             </div>
         </div>
 
@@ -29,13 +36,25 @@
                 <span v-else>🚀 Fahrt starten</span>
             </button>
 
-            <button @click="clearSelection" class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50">Abbrechen</button>
+            <button
+                @click="clearSelection"
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+            >
+                Abbrechen
+            </button>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { clearSelection, isCalculatingRoute, routeInfo, selectedScooter, startRide as startScooterRide, targetPosition } from "@/stores/scooters";
+import {
+    clearSelection,
+    isCalculatingRoute,
+    routeInfo,
+    selectedScooter,
+    startRide as startScooterRide,
+    targetPosition,
+} from "@/stores/scooters";
 import { watch } from "vue";
 
 // Debug watchers
@@ -52,9 +71,14 @@ watch(targetPosition, (newValue) => {
 });
 
 function startRide() {
-    const rideId = startScooterRide();
-    if (rideId) {
-        console.log(`Fahrt gestartet: ${rideId}`);
-    }
+    startScooterRide()
+        .then((rideId) => {
+            if (rideId) {
+                console.log(`Fahrt gestartet: ${rideId}`);
+            }
+        })
+        .catch((error) => {
+            console.error("Failed to start ride:", error);
+        });
 }
 </script>
