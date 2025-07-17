@@ -1,13 +1,17 @@
 <template>
   <div
-    class="map-container"
-    :class="{ fullscreen: isFullscreen }"
+    :class="[
+      props.full
+        ? 'fixed inset-0 w-screen h-screen rounded-none shadow-none z-[10000] cursor-default'
+        : 'fixed left-1/2 top-1/2 w-[50vw] h-[50vh] rounded-2xl shadow-2xl z-10 cursor-pointer -translate-x-1/2 -translate-y-1/2',
+      'bg-white overflow-hidden transition-all duration-300 ease-[cubic-bezier(.4,2,.6,1)]'
+    ]"
     @click.self="toggleFullscreen"
   >
     <!-- Original UI Overlays -->
     <div class="absolute top-4 right-4 z-[100]">
       <div class="bg-white rounded-lg shadow-lg p-4 max-w-sm">
-        <h1 class="text-xl font-bold text-gray-800 mb-2">🛴 Scooteq</h1>
+        <h1 class="text-xl font-bold text-gray-800 mb-2">🛴 ScooTeq</h1>
         <p class="text-sm text-gray-600">
           Klicken Sie auf einen verfügbaren Scooter, dann auf Ihr Ziel
         </p>
@@ -38,32 +42,36 @@
 
     <!-- External Component Panels -->
     <div
-  class="absolute left-1 right-1 top-20 sm:top-24 sm:left-4 sm:right-auto z-[100] space-y-2 sm:space-y-4 panel-scale"
-  :style="{
-    transform: `scale(${panelScale})`,
-    transformOrigin: 'top left',
-  }"
-  @click.stop
->
-  <ScooterInfoPanel />
-  <RouteInfoPanel />
-  <ActiveRidesPanel />
-</div>
+      class="absolute left-1 right-1 top-20 sm:top-24 sm:left-4 sm:right-auto z-[100] space-y-2 sm:space-y-4 transition-transform duration-300 ease-[cubic-bezier(.4,2,.6,1)]"
+      :style="{
+        transform: `scale(${panelScale})`,
+        transformOrigin: 'top left',
+      }"
+      @click.stop
+    >
+      <ScooterInfoPanel />
+      <RouteInfoPanel />
+      <ActiveRidesPanel />
+    </div>
 
     <!-- Non-clickable overlay (only when not fullscreen) -->
-    <div v-if="!isFullscreen" class="map-nonclickable-overlay"></div>
+    <div
+      v-if="!props.full"
+      class="absolute inset-0 w-full h-full z-[1001] bg-transparent"
+      style="pointer-events: all"
+    ></div>
 
     <!-- Map Container -->
     <div
       id="map"
-      class="absolute top-0 left-0 right-0 bottom-0"
+      class="absolute inset-0 w-full h-full z-0"
       ref="mapElement"
     ></div>
 
     <!-- Expand Button (only when not fullscreen) -->
     <button
-      v-if="!isFullscreen"
-      class="expand-btn"
+      v-if="!props.full"
+      class="absolute bottom-4 right-4 z-[2000] bg-[#ACCACE] border-none rounded-full w-9 h-9 text-xl cursor-pointer shadow-md transition-colors duration-200 hover:bg-gray-100"
       @click.stop="toggleFullscreen"
       title="Vollbild"
     >
@@ -72,8 +80,8 @@
 
     <!-- Collapse Button (only when fullscreen) -->
     <button
-      v-if="isFullscreen"
-      class="exit-fullscreen-btn"
+      v-if="props.full"
+      class="absolute top-4 right-4 z-[2000] bg-[#ACCACE] border-none rounded-full w-9 h-9 text-xl cursor-pointer shadow-md transition-colors duration-200 hover:bg-gray-100"
       @click.stop="toggleFullscreen"
       title="Zurück"
     >
@@ -99,7 +107,7 @@ import {
 } from "@/stores/scooters";
 import { HAMBURG_CENTER } from "@/utils/mockData";
 import L from "leaflet";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, defineEmits, defineProps, ref, watch, onMounted, onUnmounted } from "vue";
 
 // Fix Leaflet's default icon path issues with Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -114,6 +122,13 @@ L.Icon.Default.mergeOptions({
 
 const mapElement = ref<HTMLElement | null>(null);
 const mapRef = ref<L.Map | null>(null);
+
+const props = defineProps({
+  full: Boolean
+});
+const emit = defineEmits<{
+  (event: 'update:full', value: boolean): void
+}>();
 
 let map: L.Map | null = null;
 let scooterMarkers: L.Marker[] = [];
@@ -374,16 +389,13 @@ function updateActiveRides() {
     }
   });
 }
-
-const isFullscreen = ref(false);
-
-const panelScale = computed(() => (isFullscreen.value ? 1.25 : 0.85));
+const panelScale = computed(() => (props.full ? 1.25 : 0.85));
 
 function toggleFullscreen() {
-  isFullscreen.value = !isFullscreen.value;
+  emit('update:full', !props.full);
   setTimeout(() => {
     if (mapRef.value) mapRef.value.invalidateSize();
-  }, 300);
+  }, 200);
 }
 
 onMounted(() => {
@@ -425,181 +437,3 @@ watch(targetPosition, updateRoute);
 watch(activeRides, updateActiveRides, { deep: true });
 </script>
 
-<style>
-html,
-body,
-#app {
-  margin: 0;
-  padding: 0;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-}
-
-.map-container {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 50vw;
-  height: 50vh;
-  transform: translate(-50%, -50%);
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 2, 0.6, 1);
-  z-index: 10;
-  cursor: pointer;
-}
-
-.map-container.fullscreen {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  z-index: 10000 !important;
-  cursor: default;
-  /* Remove centering transform in fullscreen */
-  transform: none !important;
-}
-
-.expand-btn {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  z-index: 2000;
-  background: rgba(255, 255, 255, 0.85);
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: background 0.2s;
-}
-.expand-btn:hover {
-  background: #f3f4f6;
-}
-
-.exit-fullscreen-btn {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 2000;
-  background: rgba(255, 255, 255, 0.85);
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  transition: background 0.2s;
-}
-.exit-fullscreen-btn:hover {
-  background: #f3f4f6;
-}
-
-.panel-scale {
-  transition: transform 0.3s cubic-bezier(0.4, 2, 0.6, 1);
-}
-
-#map {
-  width: 100% !important;
-  height: 100% !important;
-  z-index: 0;
-}
-
-.custom-scooter-icon,
-.custom-target-icon,
-.custom-active-ride-target-icon {
-  background: none !important;
-  border: none !important;
-}
-
-/* Fix for leaflet tiles not loading properly */
-.leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  background: #e5e7eb;
-}
-
-/* Ensure map tiles load */
-.leaflet-tile {
-  max-width: none !important;
-}
-
-/* FIX: Ensure popups are above everything else */
-.leaflet-popup-pane {
-  z-index: 1000 !important;
-}
-
-.leaflet-popup {
-  z-index: 1001 !important;
-}
-
-.leaflet-popup-content-wrapper {
-  z-index: 1002 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
-}
-
-.leaflet-popup-content {
-  margin: 8px 12px !important;
-  font-family: system-ui, -apple-system, sans-serif !important;
-  z-index: 1003 !important;
-}
-
-.leaflet-popup-tip {
-  z-index: 1001 !important;
-}
-
-/* Ensure popup close button is visible */
-.leaflet-popup-close-button {
-  z-index: 1004 !important;
-  color: #374151 !important;
-  font-weight: bold !important;
-}
-
-.leaflet-popup-close-button:hover {
-  color: #111827 !important;
-}
-
-/* Custom popup positioning */
-.custom-popup .leaflet-popup-content-wrapper {
-  max-width: 250px !important;
-  min-width: 200px !important;
-}
-
-.custom-popup .leaflet-popup-tip-container {
-  margin-top: -1px !important;
-}
-
-/* Non-clickable overlay */
-.map-nonclickable-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1001; /* Below the expand button (which is z-index: 2000) */
-  background: transparent;
-  pointer-events: all;
-}
-
-/* Responsive panel tweaks */
-@media (max-width: 640px) {
-  .panel-scale > div {
-    max-width: 95vw !important;
-    min-width: 0 !important;
-    font-size: 0.95rem !important;
-    padding: 0.75rem !important;
-  }
-}
-</style>
