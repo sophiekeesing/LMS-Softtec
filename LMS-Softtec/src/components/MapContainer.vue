@@ -106,7 +106,7 @@ onMounted(() => {
 
     // Backup attempt after more time
     setTimeout(async () => {
-        if (map) {
+        if (!map) {
             console.log("Second attempt to initialize map...");
             mapStore.initMap();
             await initializeScooters();
