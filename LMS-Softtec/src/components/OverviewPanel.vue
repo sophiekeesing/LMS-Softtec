@@ -1,7 +1,7 @@
 <template>
 <!-- Original UI Overlays -->
     <div class="absolute top-4 right-4 z-[100]" :class="[props.isFullScreen ? 'right-18' : 'right-4']">
-      <div class="bg-white rounded-lg shadow-lg p-4 max-w-sm">
+      <div class="bg-white rounded-lg shadow-lg p-4 max-w-xs">
         <h1 class="text-xl font-bold text-gray-800 mb-2">🛴 ScooTeq</h1>
         <p class="text-sm text-gray-600">
           Klicken Sie auf einen verfügbaren Scooter, dann auf Ihr Ziel

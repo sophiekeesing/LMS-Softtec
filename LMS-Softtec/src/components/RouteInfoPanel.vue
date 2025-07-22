@@ -1,7 +1,7 @@
 <template>
     <div
         v-if="routeInfo && selectedScooter && targetPosition"
-        class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs sm:max-w-sm text-xs sm:text-sm md:text-base"
+        class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs text-xs sm:text-sm"
     >
         <h2 class="text-lg font-bold text-gray-800 mb-3">Route berechnet</h2>
 

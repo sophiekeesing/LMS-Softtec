@@ -1,5 +1,5 @@
 <template>
-    <div v-if="selectedScooter" class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs sm:max-w-sm text-xs sm:text-sm md:text-base">
+    <div v-if="selectedScooter" class="bg-white rounded-lg shadow-lg p-3 sm:p-4 max-w-xs text-xs sm:text-sm">
         <div class="flex items-center justify-between mb-3">
             <h2 class="text-lg font-bold text-gray-800">
                 {{ selectedScooter.isInUse ? "Scooter in Benutzung" : "Ausgewählter Scooter" }}
